@@ -13,14 +13,14 @@ vanity finds your modules for you. Tag a repository with the `go` topic and it s
 | `/foo/any/sub?go-get=1`     | HTML with `go-import` (and `go-source` when known) for `<host>/foo` |
 | `/foo/any/sub` in a browser | `302` redirect to the repository                                    |
 | `/`                         | An index of every module                                            |
-| `/style.css`                | The stylesheet shared by every page                                 |
+| `/.assets/style.css`        | The stylesheet shared by every page                                 |
 | Unknown module              | `404` page                                                          |
 
-The first path segment is the module name, so subpackages resolve to their module. `/style.css` is reserved for the stylesheet, so no module can be named `style.css`. The domain is taken from the request's host, so it is never configured.
+The first path segment is the module name, so subpackages resolve to their module. Names use letters, digits, `.`, `-` and `_`, and can't start or end with a dot, as in Go. Paths that start with a dot, like `/.assets/`, belong to the server. Import paths use the request's host. `DOMAIN` only chooses where the Worker is published.
 
 ## Configuration
 
-Settings are read from `.env` when the Worker is built or run locally. Copy `.env.example` to `.env` and fill in what you need. Variables already set in the environment take precedence over `.env`, so CI can provide them directly. An empty value means unset. `.env` is ignored by git, so the repository holds no deployment values.
+Copy `.env.example` to `.env` and fill in what you need. An empty value means unset. `.env` is ignored by git, so the repository holds no deployment values. In `.env`, quote values that contain `#`, such as `MODULES='{"foo":"https://example.com/foo#readme"}'`. Otherwise `#` starts a comment and cuts the value short.
 
 | Setting       | Purpose                                                                        | Default                  |
 | ------------- | ------------------------------------------------------------------------------ | ------------------------ |
@@ -31,40 +31,30 @@ Settings are read from `.env` when the Worker is built or run locally. Copy `.en
 | `FORGE_OWNER` | User or organization whose repositories are discovered. Required with `FORGE`. | none                     |
 | `FORGE_TOPIC` | Topic a repository needs to be published.                                      | `go`                     |
 | `FORGE_URL`   | Forge API base URL, for self-hosted instances.                                 | `https://api.github.com` |
-| `FORGE_TOKEN` | Optional token that raises the forge's rate limit. Deployed as a secret.       | none                     |
+| `FORGE_TOKEN` | Optional token that raises the forge's rate limit.                             | none                     |
 | `CACHE_TTL`   | Seconds to cache forge answers, including "not found". `0` disables caching.   | `3600`                   |
 
-Settings are fixed when the Worker is built: after changing one, deploy again, or restart `npm run dev`.
+`DOMAIN` and `WORKER_NAME` are read when building. Variables already set in the environment take precedence over `.env`, so in CI you set them as build variables.
+
+The other settings are read by the Worker. They are stored on it as secrets, uploaded from `.env` when you deploy with it as the secrets file (see [Deploying](#deploying)). Deploys without the secrets file keep the values already on the Worker. The local dev server reads them from `.env`.
 
 Only public repositories are discovered, even if the token can see private ones.
 
-Invalid settings make every request answer `500` with a message naming the setting.
+Invalid settings make every module and index request answer `500` with a message naming the setting.
 
 ### Forge token
 
-Unauthenticated GitHub requests are limited to 60 an hour, shared with other Workers on the same IP. Caching keeps the count low, but a token avoids surprises. A token with no scopes (read-only access to public data) is enough.
-
-Set `FORGE_TOKEN` in `.env`. The local dev server passes it to the Worker as is. When deploying, it becomes a secret, which Cloudflare needs before the first deploy that declares it. Put the token alone in a separate file, such as `.env.secrets` (also ignored by git):
-
-```sh
-FORGE_TOKEN=github_pat_...
-```
-
-and upload it with that deploy:
-
-```sh
-npm run deploy -- --secrets-file .env.secrets
-```
-
-Later deploys keep the uploaded secret. Don't pass `.env` itself as the secrets file, since that would upload every setting as a secret.
+Unauthenticated GitHub requests are limited to 60 an hour, shared with other Workers on the same IP. Caching keeps the count low, but a token avoids surprises. A token with no scopes (read-only access to public data) is enough. Set `FORGE_TOKEN` in `.env` and deploy with the secrets file. To rotate or remove it, change or clear it in `.env` and deploy with the secrets file again.
 
 ## Deploying
 
 ```sh
 npm install
 cp .env.example .env   # then fill it in
-npm run deploy
+npm run deploy -- --secrets-file .env
 ```
+
+This deploys the Worker and uploads the runtime settings from `.env` with it. Use the same command after changing a setting. A plain `npm run deploy`, such as from CI, keeps the settings already on the Worker. It fails if they were never uploaded, so the first deploy needs the secrets file. `DOMAIN` and `WORKER_NAME` end up among the uploaded secrets too, which is harmless.
 
 With `DOMAIN` set, the Worker is published to that custom domain. The edge cache only works on custom domains, which a vanity domain needs anyway. On `*.workers.dev` everything still works, just uncached.
 

@@ -18,19 +18,19 @@ function sources(env: object): Source {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Registered before the module route, so it never resolves as a module.
-app.get("/style.css", (c) =>
+app.use(renderer);
+
+// Its first segment starts with a dot, so it can never be a module name.
+app.get("/.assets/style.css", (c) =>
   c.body(css, 200, {
     "Content-Type": "text/css; charset=utf-8",
     "Cache-Control": "public, max-age=3600",
   }),
 );
 
-app.use(renderer);
-
 app.get("/", async (c) => {
   const host = new URL(c.req.url).host;
-  const modules = await sources(c.env).list();
+  const modules = (await sources(c.env).list()).filter((module) => NAME.test(module.name));
   return c.render(<Index host={host} modules={modules} />);
 });
 

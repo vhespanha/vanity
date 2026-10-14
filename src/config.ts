@@ -1,7 +1,11 @@
 import { forges } from "./forges/index.ts";
 
-/** Module names: what the first path segment must look like. */
-export const NAME = /^[A-Za-z0-9._-]+$/;
+/**
+ * Module names: what the first path segment must look like. Like Go path
+ * elements, they can't start or end with a dot, which leaves dot paths such as
+ * /.assets/ free for the server's own files.
+ */
+export const NAME = /^(?!\.)[A-Za-z0-9._-]+(?<!\.)$/;
 
 /** Raised for invalid deployment settings; the message names the setting. */
 export class ConfigError extends Error {}
@@ -33,7 +37,7 @@ export function config(env: object): Config {
     throw new ConfigError("CACHE_TTL must be a non-negative whole number of seconds");
   }
 
-  const config: Config = { modules: modules(vars.MODULES), ttl: Number(ttl) };
+  const config: Config = { modules: modules(text("MODULES")), ttl: Number(ttl) };
 
   const forge = text("FORGE");
   if (forge) {
@@ -56,15 +60,14 @@ export function config(env: object): Config {
   return config;
 }
 
-/** MODULES arrives as an object from the config file, or as a JSON string from .dev.vars. */
-function modules(value: unknown): Record<string, string> {
-  if (value === undefined || value === "") return {};
-  if (typeof value === "string") {
-    try {
-      value = JSON.parse(value);
-    } catch {
-      throw new ConfigError("MODULES is not valid JSON");
-    }
+/** MODULES is a JSON object mapping module names to repository URLs. */
+function modules(json: string | undefined): Record<string, string> {
+  if (json === undefined) return {};
+  let value: unknown;
+  try {
+    value = JSON.parse(json);
+  } catch {
+    throw new ConfigError("MODULES is not valid JSON");
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new ConfigError('MODULES must be a JSON object like {"name": "https://..."}');

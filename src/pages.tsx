@@ -12,7 +12,9 @@ export const renderer = jsxRenderer(
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="/style.css" />
+        <link rel="stylesheet" href="/.assets/style.css" />
+        {/* No favicon; without this, browsers ask for /favicon.ico. */}
+        <link rel="icon" href="data:," />
       </head>
       <body>{children}</body>
     </html>

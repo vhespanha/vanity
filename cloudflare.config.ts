@@ -9,15 +9,17 @@ declare const process: {
   loadEnvFile(path: string): void;
 };
 
-// Settings come from .env (see .env.example). Variables already set in the
-// environment win, since loadEnvFile doesn't overwrite them.
+// DOMAIN and WORKER_NAME come from .env (see .env.example) or, in CI, from
+// build variables. Variables already set in the environment win, since
+// loadEnvFile doesn't overwrite them.
 try {
   process.loadEnvFile(".env");
 } catch (err) {
   if ((err as { code?: string }).code !== "ENOENT") throw err;
 }
 
-const env = (key: string) => process.env[key] ?? "";
+// Empty or whitespace-only values mean "unset".
+const env = (key: string) => process.env[key]?.trim() ?? "";
 
 const domain = env("DOMAIN");
 
@@ -27,17 +29,17 @@ export default defineConfig({
     compatibilityDate: "2026-10-06",
     entrypoint,
     domains: domain ? [domain] : [],
-    // Empty values mean "unset". See README.md for what each setting does.
+    // Runtime settings are secrets, so deploys without a secrets file (such as
+    // from CI) keep the values already on the Worker. Dev reads them from .env.
+    // See README.md for what each setting does.
     env: {
-      MODULES: bindings.text(env("MODULES")),
-      FORGE: bindings.text(env("FORGE")),
-      FORGE_OWNER: bindings.text(env("FORGE_OWNER")),
-      FORGE_URL: bindings.text(env("FORGE_URL")),
-      FORGE_TOPIC: bindings.text(env("FORGE_TOPIC")),
-      CACHE_TTL: bindings.text(env("CACHE_TTL")),
-      // A declared secret must be uploaded before deploying, so it's only
-      // declared when a token is set.
-      ...(env("FORGE_TOKEN") ? { FORGE_TOKEN: bindings.secret() } : {}),
+      MODULES: bindings.secret(),
+      FORGE: bindings.secret(),
+      FORGE_OWNER: bindings.secret(),
+      FORGE_URL: bindings.secret(),
+      FORGE_TOPIC: bindings.secret(),
+      FORGE_TOKEN: bindings.secret(),
+      CACHE_TTL: bindings.secret(),
     },
   },
 });
