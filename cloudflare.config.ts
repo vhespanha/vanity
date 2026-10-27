@@ -26,7 +26,7 @@ const domain = env("DOMAIN");
 export default defineConfig({
   worker: {
     name: env("WORKER_NAME") || "vanity",
-    compatibilityDate: "2026-10-06",
+    compatibilityDate: "2026-10-23",
     entrypoint,
     domains: domain ? [domain] : [],
     // Runtime settings are secrets, so deploys without a secrets file (such as

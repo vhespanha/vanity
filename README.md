@@ -48,6 +48,8 @@ Unauthenticated GitHub requests are limited to 60 an hour, shared with other Wor
 
 ## Deploying
 
+Requires Node.js 22.23+, 24.22+ or 26.12+ (the range `cf` supports). `.npmrc` sets `engine-strict`, so `npm install` fails on other versions.
+
 ```sh
 npm install
 cp .env.example .env   # then fill it in
