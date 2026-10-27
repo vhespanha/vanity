@@ -6,10 +6,10 @@ import { ErrorPage, GoGet, Index, NotFound, renderer, stylesheet } from "./pages
 import { cached, combine, manual, type Registry, SourceError } from "./sources.ts";
 
 /** Manual modules first, then the configured forge behind the edge cache. */
-function registry(env: Env): Registry {
+function registry(env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): Registry {
   const { modules, forge, ttl } = config(env);
   if (!forge) return combine(manual(modules));
-  return combine(manual(modules), cached(forges[forge.name](forge.options), forge.key, ttl));
+  return combine(manual(modules), cached(forges[forge.name](forge.options), forge.key, ttl, ctx));
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -27,7 +27,7 @@ app.get("/.assets/style.css", (c) =>
 
 app.get("/", async (c) => {
   const host = new URL(c.req.url).host;
-  const modules = await registry(c.env).list();
+  const modules = await registry(c.env, c.executionCtx).list();
   return c.render(<Index host={host} modules={modules} />);
 });
 
@@ -35,7 +35,7 @@ app.get("*", async (c) => {
   const host = new URL(c.req.url).host;
   // Subpackage paths (/foo/sub/pkg) belong to the module named by the first segment.
   const name = c.req.path.split("/")[1];
-  const module = await registry(c.env).lookup(name);
+  const module = await registry(c.env, c.executionCtx).lookup(name);
   if (!module) {
     c.status(404);
     return c.render(<NotFound name={name} />);

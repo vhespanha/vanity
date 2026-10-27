@@ -41,7 +41,12 @@ export function manual(modules: Record<string, string>): Source {
  * Caches a source's list in the edge cache for `ttl` seconds. Errors are never
  * cached. `key` must identify the source.
  */
-export function cached(source: Source, key: string, ttl: number): Source {
+export function cached(
+  source: Source,
+  key: string,
+  ttl: number,
+  ctx: { waitUntil(promise: Promise<unknown>): void },
+): Source {
   if (ttl === 0) return source;
   const request = new Request(`https://vanity.cache/${encodeURIComponent(key)}/list`);
   return {
@@ -51,7 +56,7 @@ export function cached(source: Source, key: string, ttl: number): Source {
       if (hit) return hit.json<Module[]>();
       const modules = await source.list();
       const headers = { "Content-Type": "application/json", "Cache-Control": `max-age=${ttl}` };
-      await cache.put(request, new Response(JSON.stringify(modules), { headers }));
+      ctx.waitUntil(cache.put(request, new Response(JSON.stringify(modules), { headers })));
       return modules;
     },
   };
