@@ -31,6 +31,13 @@ export function github({ owner, url, token, topic }: ForgeConfig): Source {
     } catch (err) {
       throw new SourceError(`Could not reach ${target}`, { cause: err });
     }
+    if (res.status === 401 && headers.Authorization) {
+      // A bad token shouldn't take the site down: public data doesn't need one.
+      // Logged as an error so it shows up in the Worker's Issues.
+      console.error(new Error("GitHub rejected FORGE_TOKEN (401); continuing without it"));
+      delete headers.Authorization;
+      return get(target);
+    }
     if (res.status === 404) return null;
     if (!res.ok) throw new SourceError(`GitHub responded ${res.status} to ${target}`);
     return res;

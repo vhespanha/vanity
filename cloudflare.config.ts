@@ -40,6 +40,9 @@ export default defineConfig({
     compatibilityDate: "2026-10-23",
     entrypoint,
     domains: domain ? [domain] : [],
+    // Issues groups logged errors, such as a rejected FORGE_TOKEN, in the
+    // dashboard, where an automation can notify you.
+    observability: { enabled: true, issues: { enabled: true } },
     // Settings are secrets. Declared secrets are required, so only the ones
     // set here are declared: dev reads those from .env, and deploys with
     // --secrets-file .env upload them. Deploys without .env (such as from CI)

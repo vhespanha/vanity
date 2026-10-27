@@ -44,7 +44,9 @@ Invalid settings make every module and index request answer `500` with a message
 
 ### Forge token
 
-Unauthenticated GitHub requests are limited to 60 an hour, shared with other Workers on the same IP. Caching keeps the count low, but a token avoids surprises. A token with no scopes (read-only access to public data) is enough. Set `FORGE_TOKEN` in `.env` and deploy with the secrets file. To rotate or remove it, change or clear it in `.env` and deploy with the secrets file again.
+Unauthenticated GitHub requests are limited to 60 an hour, shared with other Workers on the same IP. Caching keeps the count low, but a token avoids surprises. A token with no scopes (read-only access to public data) is enough. Set `FORGE_TOKEN` in `.env` and deploy with the secrets file. To rotate it, change it in `.env` and deploy with the secrets file again. Deploys keep secrets they don't upload, so to remove it, also delete it from the Worker with `npx cf workers secrets delete FORGE_TOKEN --worker vanity`.
+
+If GitHub rejects the token, the Worker carries on without it and logs an error. Errors show up under the Worker's Issues in the Cloudflare dashboard, where an automation can notify you.
 
 ## Deploying
 
