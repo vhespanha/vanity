@@ -20,6 +20,8 @@ export function github({ owner, url, token, topic }: ForgeConfig): Source {
     "User-Agent": "vanity",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  // GitHub stores topics in lowercase.
+  topic = topic.toLowerCase();
 
   /** Fetches a GitHub API URL; null on 404, throws on any other failure. */
   async function get(target: string): Promise<Response | null> {
