@@ -92,7 +92,7 @@ type Source = {
 };
 ```
 
-Both throw when the forge cannot be reached. A plugin only fetches and maps. Caching, precedence and HTML are handled for it.
+Both throw a `SourceError` when the forge cannot be reached, which answers `502`. A plugin only fetches and maps. Caching, precedence and HTML are handled for it.
 
 1. Add `src/forges/<name>.ts` exporting a `(config: ForgeConfig) => Source` function. `src/forges/github.ts` is the reference.
 2. Register it in `src/forges/index.ts`.

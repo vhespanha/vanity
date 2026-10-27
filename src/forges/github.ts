@@ -1,5 +1,5 @@
 import type { ForgeConfig } from "../config.ts";
-import type { Module, Source } from "../sources.ts";
+import { type Module, type Source, SourceError } from "../sources.ts";
 
 type Repo = {
   name: string;
@@ -25,9 +25,14 @@ export function github({ owner, url, token, topic }: ForgeConfig): Source {
 
   /** Fetches a GitHub API URL; null on 404, throws on any other failure. */
   async function get(target: string): Promise<Response | null> {
-    const res = await fetch(target, { headers });
+    let res: Response;
+    try {
+      res = await fetch(target, { headers });
+    } catch (err) {
+      throw new SourceError(`Could not reach ${target}`, { cause: err });
+    }
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`GitHub responded ${res.status} to ${target}`);
+    if (!res.ok) throw new SourceError(`GitHub responded ${res.status} to ${target}`);
     return res;
   }
 

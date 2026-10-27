@@ -57,6 +57,11 @@ function read(env: Env): Config {
     const owner = text(env.FORGE_OWNER);
     if (!owner) throw new ConfigError("FORGE_OWNER is required when FORGE is set");
     const url = text(env.FORGE_URL);
+    if (url !== undefined && !URL.canParse(url)) {
+      throw new ConfigError(
+        "FORGE_URL must be an absolute URL like https://ghe.example.com/api/v3",
+      );
+    }
     const topic = text(env.FORGE_TOPIC) ?? "go";
     config.forge = {
       name: forge,

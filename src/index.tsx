@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { config, ConfigError, NAME } from "./config.ts";
 import { forges } from "./forges/index.ts";
 import { ErrorPage, GoGet, Index, NotFound, renderer, stylesheet } from "./pages.tsx";
-import { cached, combine, manual, type Source } from "./sources.ts";
+import { cached, combine, manual, type Source, SourceError } from "./sources.ts";
 
 /** Manual modules first, then the configured forge behind the edge cache. */
 function sources(env: Env): Source {
@@ -51,8 +51,12 @@ app.onError((err, c) => {
     return c.render(<ErrorPage message={`Invalid configuration: ${err.message}`} />);
   }
   console.error(err);
-  c.status(502);
-  return c.render(<ErrorPage message="Could not reach the module source. Try again later." />);
+  if (err instanceof SourceError) {
+    c.status(502);
+    return c.render(<ErrorPage message="Could not reach the module source. Try again later." />);
+  }
+  c.status(500);
+  return c.render(<ErrorPage message="The server hit an unexpected error." />);
 });
 
 export default app;

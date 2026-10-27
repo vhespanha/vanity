@@ -12,12 +12,16 @@ export type Module = {
 
 /**
  * Where modules come from. `lookup` resolves to null when the source does not
- * know the name, and both methods throw when the source cannot be reached.
+ * know the name, and both methods throw a SourceError when the source cannot
+ * be reached.
  */
 export type Source = {
   lookup(name: string): Promise<Module | null>;
   list(): Promise<Module[]>;
 };
+
+/** Raised when a source cannot be reached; answered with 502. */
+export class SourceError extends Error {}
 
 /** Modules listed explicitly as name -> repository URL. */
 export function manual(modules: Record<string, string>): Source {
