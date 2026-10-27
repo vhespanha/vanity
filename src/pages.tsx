@@ -2,6 +2,17 @@ import { jsxRenderer } from "hono/jsx-renderer";
 
 import type { Module } from "./sources.ts";
 
+import css from "./style.css?inline";
+
+/** FNV-1a, enough to tell stylesheet versions apart. */
+function hash(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+
+export const stylesheet = { css, href: `/.assets/style.css?v=${hash(css)}` };
+
 /**
  * The shared document. Pages render their own <title> and <meta> tags, which
  * Hono moves into <head>.
@@ -12,7 +23,7 @@ export const renderer = jsxRenderer(
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="/.assets/style.css" />
+        <link rel="stylesheet" href={stylesheet.href} />
         {/* No favicon; without this, browsers ask for /favicon.ico. */}
         <link rel="icon" href="data:," />
       </head>

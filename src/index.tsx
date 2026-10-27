@@ -2,10 +2,8 @@ import { Hono } from "hono";
 
 import { config, ConfigError, NAME } from "./config.ts";
 import { forges } from "./forges/index.ts";
-import { ErrorPage, GoGet, Index, NotFound, renderer } from "./pages.tsx";
+import { ErrorPage, GoGet, Index, NotFound, renderer, stylesheet } from "./pages.tsx";
 import { cached, combine, manual, type Source } from "./sources.ts";
-
-import css from "./style.css?inline";
 
 /** Manual modules first, then the configured forge behind the edge cache. */
 function sources(env: object): Source {
@@ -21,10 +19,11 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(renderer);
 
 // Its first segment starts with a dot, so it can never be a module name.
+// Pages link it with a content hash in the query, so it can be cached for good.
 app.get("/.assets/style.css", (c) =>
-  c.body(css, 200, {
+  c.body(stylesheet.css, 200, {
     "Content-Type": "text/css; charset=utf-8",
-    "Cache-Control": "public, max-age=3600",
+    "Cache-Control": "public, max-age=31536000, immutable",
   }),
 );
 
