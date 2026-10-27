@@ -6,12 +6,10 @@ import { ErrorPage, GoGet, Index, NotFound, renderer, stylesheet } from "./pages
 import { cached, combine, manual, type Source } from "./sources.ts";
 
 /** Manual modules first, then the configured forge behind the edge cache. */
-function sources(env: object): Source {
+function sources(env: Env): Source {
   const { modules, forge, ttl } = config(env);
   if (!forge) return manual(modules);
-  const { owner, url = "", topic } = forge.options;
-  const key = [forge.name, url, owner, topic].join(" ");
-  return combine(manual(modules), cached(forges[forge.name](forge.options), key, ttl));
+  return combine(manual(modules), cached(forges[forge.name](forge.options), forge.key, ttl));
 }
 
 const app = new Hono<{ Bindings: Env }>();

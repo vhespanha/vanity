@@ -20,40 +20,49 @@ export type ForgeConfig = {
 
 export type Config = {
   modules: Record<string, string>;
-  forge?: { name: string; options: ForgeConfig };
+  /** `key` identifies the forge's answers in the cache. */
+  forge?: { name: string; options: ForgeConfig; key: string };
   ttl: number;
 };
 
-/** Reads and validates settings from the Worker env. Empty values count as unset. */
-export function config(env: object): Config {
-  const vars = env as Record<string, unknown>;
-  const text = (key: string) => {
-    const value = vars[key];
-    return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
-  };
+// The env doesn't change within an isolate, so it is read once.
+const parsed = new WeakMap<Env, Config>();
 
-  const ttl = text("CACHE_TTL") ?? "3600";
+/** Reads and validates settings from the Worker env. Empty values count as unset. */
+export function config(env: Env): Config {
+  let config = parsed.get(env);
+  if (!config) {
+    config = read(env);
+    parsed.set(env, config);
+  }
+  return config;
+}
+
+function read(env: Env): Config {
+  // Secrets that were never uploaded are missing at runtime, whatever the types say.
+  const text = (value: string | undefined) => value?.trim() || undefined;
+
+  const ttl = text(env.CACHE_TTL) ?? "3600";
   if (!/^\d+$/.test(ttl)) {
     throw new ConfigError("CACHE_TTL must be a non-negative whole number of seconds");
   }
 
-  const config: Config = { modules: modules(text("MODULES")), ttl: Number(ttl) };
+  const config: Config = { modules: modules(text(env.MODULES)), ttl: Number(ttl) };
 
-  const forge = text("FORGE");
+  const forge = text(env.FORGE);
   if (forge) {
     if (!Object.hasOwn(forges, forge)) {
       throw new ConfigError(`FORGE "${forge}" is not one of: ${Object.keys(forges).join(", ")}`);
     }
-    const owner = text("FORGE_OWNER");
+    const owner = text(env.FORGE_OWNER);
     if (!owner) throw new ConfigError("FORGE_OWNER is required when FORGE is set");
+    const url = text(env.FORGE_URL);
+    const topic = text(env.FORGE_TOPIC) ?? "go";
     config.forge = {
       name: forge,
-      options: {
-        owner,
-        url: text("FORGE_URL"),
-        token: text("FORGE_TOKEN"),
-        topic: text("FORGE_TOPIC") ?? "go",
-      },
+      options: { owner, url, token: text(env.FORGE_TOKEN), topic },
+      // The token is left out: it doesn't change the answers.
+      key: JSON.stringify([forge, url, owner, topic]),
     };
   }
 
