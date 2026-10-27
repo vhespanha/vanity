@@ -32,7 +32,7 @@ Copy `.env.example` to `.env` and fill in what you need. An empty value means un
 | `FORGE_TOPIC` | Topic a repository needs to be published.                                      | `go`                     |
 | `FORGE_URL`   | Forge API base URL, for self-hosted instances.                                 | `https://api.github.com` |
 | `FORGE_TOKEN` | Optional token that raises the forge's rate limit.                             | none                     |
-| `CACHE_TTL`   | Seconds to cache forge answers, including "not found". `0` disables caching.   | `3600`                   |
+| `CACHE_TTL`   | Seconds to cache the forge's module list. `0` disables caching.                | `3600`                   |
 
 `DOMAIN` and `WORKER_NAME` are read when building. Variables already set in the environment take precedence over `.env`, so in CI you set them as build variables.
 
@@ -79,20 +79,19 @@ The dev server reads `.env` when it starts, so restart it after editing.
 
 ## Caching
 
-Forge answers are cached per Cloudflare location for `CACHE_TTL` seconds. Adding or removing a topic can take that long to show up. Failed forge requests are never cached and answer `502`, so an outage is not mistaken for a missing module.
+The forge's module list is cached per Cloudflare location for `CACHE_TTL` seconds, and module lookups use the same list, so the index and `go get` always agree. Adding or removing a topic can take that long to show up. Failed forge requests are never cached and answer `502`, so an outage is not mistaken for a missing module.
 
 ## Adding a forge
 
-A forge plugin is a function that takes the shared settings and returns a source with two methods:
+A forge plugin is a function that takes the shared settings and returns a source:
 
 ```ts
 type Source = {
-  lookup(name: string): Promise<Module | null>; // null: not published here
-  list(): Promise<Module[]>;
+  list(): Promise<Module[]>; // every module published here
 };
 ```
 
-Both throw a `SourceError` when the forge cannot be reached, which answers `502`. A plugin only fetches and maps. Caching, precedence and HTML are handled for it.
+`list` throws a `SourceError` when the forge cannot be reached, which answers `502`. A plugin only fetches and maps. Caching, lookups, precedence, name checks and HTML are handled for it.
 
 1. Add `src/forges/<name>.ts` exporting a `(config: ForgeConfig) => Source` function. `src/forges/github.ts` is the reference.
 2. Register it in `src/forges/index.ts`.

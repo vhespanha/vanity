@@ -54,15 +54,6 @@ export function github({ owner, url, token, topic }: ForgeConfig): Source {
   }
 
   return {
-    async lookup(name) {
-      const res = await get(
-        `${api}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
-      );
-      if (!res) return null;
-      const repo = await res.json<Repo>();
-      // GitHub answers for renamed repositories under their old name too.
-      return repo.name === name ? toModule(repo) : null;
-    },
     async list() {
       const modules: Module[] = [];
       let next: string | undefined =

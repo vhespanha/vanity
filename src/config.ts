@@ -1,11 +1,5 @@
 import { forges } from "./forges/index.ts";
-
-/**
- * Module names: what the first path segment must look like. Like Go path
- * elements, they can't start or end with a dot, which leaves dot paths such as
- * /.assets/ free for the server's own files.
- */
-export const NAME = /^(?!\.)[A-Za-z0-9._-]+(?<!\.)$/;
+import { NAME } from "./sources.ts";
 
 /** Raised for invalid deployment settings; the message names the setting. */
 export class ConfigError extends Error {}
