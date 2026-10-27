@@ -19,6 +19,14 @@ export type Config = {
   ttl: number;
 };
 
+/** Settings read from the env. Only those set at deploy time are declared, so any may be missing. */
+type Settings = Partial<
+  Record<
+    "MODULES" | "FORGE" | "FORGE_OWNER" | "FORGE_URL" | "FORGE_TOPIC" | "FORGE_TOKEN" | "CACHE_TTL",
+    string
+  >
+>;
+
 // The env doesn't change within an isolate, so it is read once.
 const parsed = new WeakMap<Env, Config>();
 
@@ -32,8 +40,7 @@ export function config(env: Env): Config {
   return config;
 }
 
-function read(env: Env): Config {
-  // Secrets that were never uploaded are missing at runtime, whatever the types say.
+function read(env: Settings): Config {
   const text = (value: string | undefined) => value?.trim() || undefined;
 
   const ttl = text(env.CACHE_TTL) ?? "3600";

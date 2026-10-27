@@ -56,7 +56,7 @@ cp .env.example .env   # then fill it in
 npm run deploy -- --secrets-file .env
 ```
 
-This deploys the Worker and uploads the runtime settings from `.env` with it. Use the same command after changing a setting. A plain `npm run deploy`, such as from CI, keeps the settings already on the Worker. It fails if they were never uploaded, so the first deploy needs the secrets file. `DOMAIN` and `WORKER_NAME` end up among the uploaded secrets too, which is harmless.
+This deploys the Worker and uploads the runtime settings from `.env` with it. Use the same command after changing a setting. A plain `npm run deploy`, such as from CI, keeps the settings already on the Worker. Settings that were never uploaded count as unset. `DOMAIN` and `WORKER_NAME` end up among the uploaded secrets too, which is harmless.
 
 With `DOMAIN` set, the Worker is published to that custom domain. The edge cache only works on custom domains, which a vanity domain needs anyway. On `*.workers.dev` everything still works, just uncached.
 

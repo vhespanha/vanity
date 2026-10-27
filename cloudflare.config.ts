@@ -23,23 +23,29 @@ const env = (key: string) => process.env[key]?.trim() ?? "";
 
 const domain = env("DOMAIN");
 
+// Read by the Worker; see README.md for what each one does.
+const settings = [
+  "MODULES",
+  "FORGE",
+  "FORGE_OWNER",
+  "FORGE_URL",
+  "FORGE_TOPIC",
+  "FORGE_TOKEN",
+  "CACHE_TTL",
+];
+
 export default defineConfig({
   worker: {
     name: env("WORKER_NAME") || "vanity",
     compatibilityDate: "2026-10-23",
     entrypoint,
     domains: domain ? [domain] : [],
-    // Runtime settings are secrets, so deploys without a secrets file (such as
-    // from CI) keep the values already on the Worker. Dev reads them from .env.
-    // See README.md for what each setting does.
-    env: {
-      MODULES: bindings.secret(),
-      FORGE: bindings.secret(),
-      FORGE_OWNER: bindings.secret(),
-      FORGE_URL: bindings.secret(),
-      FORGE_TOPIC: bindings.secret(),
-      FORGE_TOKEN: bindings.secret(),
-      CACHE_TTL: bindings.secret(),
-    },
+    // Settings are secrets. Declared secrets are required, so only the ones
+    // set here are declared: dev reads those from .env, and deploys with
+    // --secrets-file .env upload them. Deploys without .env (such as from CI)
+    // declare none and keep the values already on the Worker.
+    env: Object.fromEntries(
+      settings.filter((key) => env(key)).map((key) => [key, bindings.secret()]),
+    ),
   },
 });
